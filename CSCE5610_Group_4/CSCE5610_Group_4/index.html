@@ -1,0 +1,2869 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#071225">
+<title>Comparative Analysis of FIFO and LRU Page Replacement Algorithms in Virtual Memory</title>
+
+<style>
+:root{
+ --bg:#071225;
+ --panel:#101f38;
+ --panel2:#142944;
+ --line:#294663;
+ --text:#eaf3ff;
+ --muted:#9ab1cb;
+ --cyan:#56dcff;
+ --purple:#b59aff;
+ --green:#52e3b5;
+ --red:#ff8998;
+ --yellow:#ffd480;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+ margin:0;
+ color:var(--text);
+ font-family:Segoe UI,Arial,sans-serif;
+ background:
+ radial-gradient(ellipse at 70% 0%,#193660,transparent 42%),
+ linear-gradient(140deg,#061022,#0a1931 60%,#071225);
+ min-height:100vh
+}
+body:before{
+ content:"";
+ position:fixed;
+ inset:0;
+ pointer-events:none;
+ opacity:.07;
+ background-image:
+ linear-gradient(#80bfff 1px,transparent 1px),
+ linear-gradient(90deg,#80bfff 1px,transparent 1px);
+ background-size:45px 45px
+}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+a{color:var(--cyan);text-decoration:none}
+.wrap{max-width:1480px;margin:auto;padding:22px}
+.panel{
+ background:linear-gradient(145deg,#13243e,#0c1a30);
+ border:1px solid var(--line);
+ border-radius:17px;
+ padding:22px;
+ box-shadow:0 12px 36px #0002;
+ min-width:0
+}
+header{padding:15px 0 26px}
+.eyebrow{
+ font:12px Consolas,monospace;
+ letter-spacing:2px;
+ color:var(--cyan)
+}
+h1{
+ font-size:clamp(30px,4.5vw,58px);
+ line-height:1.13;
+ max-width:1100px;
+ margin:19px 0
+}
+h1 span{color:var(--cyan)}
+h2{font-size:27px;margin:9px 0 19px}
+h3{font-size:19px;margin:0 0 14px}
+h4{margin:10px 0;font-size:15px}
+p{color:var(--muted);line-height:1.7}
+small{color:var(--muted)}
+.team{display:flex;flex-wrap:wrap;gap:12px;margin:25px 0}
+.person{
+ flex:1;min-width:210px;
+ background:#122844;
+ border:1px solid #395775;
+ border-radius:11px;
+ padding:14px
+}
+.person b{display:block;font-size:13px;margin-bottom:8px}
+.person small{font-size:12px}
+nav{
+ display:flex;gap:9px;flex-wrap:wrap;
+ padding:10px 0 25px
+}
+nav a{
+ background:#12253d;
+ border:1px solid #294764;
+ border-radius:9px;
+ padding:10px 14px;
+ color:#c9daee;
+ font-size:12px
+}
+nav a:hover{border-color:var(--cyan)}
+.section{margin-top:35px}
+.grid2{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:16px
+}
+.grid3{
+ display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:15px
+}
+.grid4{
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:14px
+}
+.btn{
+ border:1px solid #436487;
+ background:#182e4d;
+ color:var(--text);
+ border-radius:9px;
+ padding:11px 15px;
+ font-weight:650;
+ transition:.2s
+}
+.btn:hover{
+ transform:translateY(-1px);
+ border-color:var(--cyan)
+}
+.primary{
+ background:linear-gradient(120deg,#157cad,#3d63d3);
+ border-color:#5aa5f1
+}
+.btn.active{
+ border-color:var(--cyan);
+ background:#20517c;
+ color:white;
+ box-shadow:0 0 0 1px #56dcff55 inset
+}
+.actions{
+ display:flex;gap:9px;
+ flex-wrap:wrap;align-items:center
+}
+label{
+ display:block;
+ color:var(--cyan);
+ font:12px Consolas,monospace;
+ margin-bottom:11px
+}
+textarea,input[type=number],select{
+ width:100%;
+ background:#08172a;
+ color:var(--text);
+ border:1px solid #3b5a7a;
+ border-radius:9px;
+ padding:13px;
+ outline:none
+}
+textarea{
+ height:92px;
+ resize:vertical;
+ font:14px/1.6 Consolas,monospace
+}
+textarea:focus,input:focus,select:focus{
+ border-color:var(--cyan)
+}
+input[type=range]{
+ width:100%;
+ accent-color:var(--cyan)
+}
+.numrow{display:flex;gap:9px}
+.numrow input{text-align:center;font-size:22px}
+.error{
+ color:var(--red);
+ font-size:13px;
+ min-height:21px;
+ margin-top:9px
+}
+.stat small{font:11px Consolas,monospace}
+.stat strong{
+ display:block;
+ font-size:32px;
+ margin:13px 0
+}
+.stat em{
+ font:12px Consolas,monospace;
+ font-style:normal;
+ color:var(--cyan)
+}
+.insight{
+ background:#0b2038;
+ border:1px solid #2e4d6d;
+ border-left:3px solid var(--cyan);
+ border-radius:10px;
+ padding:15px;
+ margin-top:15px
+}
+.mono{font-family:Consolas,monospace}
+.info{
+ font-size:12px;
+ color:var(--muted);
+ line-height:1.7
+}
+
+/* Simulation frames */
+.frames{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(65px,1fr));
+ gap:10px;
+ margin:22px 0
+}
+.frame{
+ background:#09172b;
+ border:1px solid #3b5674;
+ border-radius:12px;
+ min-height:92px;
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:9px;
+ transition:.25s
+}
+.frame small{font:10px Consolas,monospace}
+.frame strong{font:27px Consolas,monospace}
+.frame.hit{background:#123c3e;border-color:var(--green)}
+.frame.load{background:#183d59;border-color:var(--cyan)}
+.frame.replace{background:#432940;border-color:var(--red)}
+.frame.changed{
+ animation:frameFlash .5s ease
+}
+@keyframes frameFlash{
+ 0%{transform:scale(.92);filter:brightness(1.8)}
+ 100%{transform:scale(1);filter:brightness(1)}
+}
+.registers{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:9px
+}
+.register{
+ background:#091a30;
+ border:1px solid #2e4a68;
+ padding:13px;
+ border-radius:9px;
+ overflow-wrap:anywhere
+}
+.register small{
+ display:block;
+ font:10px Consolas,monospace;
+ margin-bottom:9px
+}
+.register b{
+ font:14px Consolas,monospace;
+ color:var(--cyan)
+}
+
+/* Page timeline */
+.timeline{
+ display:flex;
+ gap:7px;
+ overflow-x:auto;
+ padding:14px 0
+}
+.token{
+ flex:0 0 49px;
+ min-height:63px;
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ align-items:center;
+ gap:4px;
+ background:#142a47;
+ border:1px solid #3b5675;
+ border-radius:9px;
+ color:white
+}
+.token small{font-size:9px}
+.token.selected{
+ background:#245576;
+ border-color:var(--cyan);
+ box-shadow:0 0 16px #56dcff30
+}
+.token.past{border-color:var(--green)}
+.token .event{
+ font:9px Consolas,monospace;
+ color:var(--muted)
+}
+.token .event.hit-label{color:var(--green)}
+.token .event.fault-label{color:var(--red)}
+.transport{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ flex-wrap:wrap
+}
+.transport input{flex:1;min-width:160px}
+.transport span{
+ font:13px Consolas,monospace;
+ color:var(--cyan)
+}
+.timeline-info{
+ margin-top:17px;
+ display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:10px
+}
+.timeline-info .signal{padding:13px}
+.timeline-info .signal b{font-size:19px}
+.event-pill{
+ display:inline-block;
+ font:11px Consolas,monospace;
+ border-radius:7px;
+ padding:6px 10px;
+ background:#223950;
+ color:var(--cyan)
+}
+.event-pill.hit{
+ color:var(--green);
+ border:1px solid #317861
+}
+.event-pill.fault{
+ color:var(--red);
+ border:1px solid #83505b
+}
+
+/* Heatmap */
+.heatmap{overflow:auto;max-width:100%}
+.heatrow{
+ display:flex;gap:4px;
+ margin:5px 0;
+ align-items:center;
+ width:max-content;
+ min-width:100%
+}
+.heatlabel{
+ width:76px;
+ flex:0 0 76px;
+ color:var(--muted);
+ font:11px Consolas,monospace
+}
+.heatcell{
+ flex:0 0 37px;
+ height:36px;
+ border-radius:5px;
+ border:1px solid #35516f;
+ background:#10233d;
+ display:grid;
+ place-items:center;
+ color:#e9f3ff;
+ font:13px Consolas,monospace;
+ cursor:pointer
+}
+.heatcell.hit{
+ background:#14534c;
+ border-color:var(--green)
+}
+.heatcell.changed{
+ background:#274a77;
+ border-color:var(--cyan)
+}
+.heatcell.replaced{
+ background:#633a54;
+ border-color:var(--red)
+}
+.heatcell.selected{
+ outline:2px solid white;
+ outline-offset:-2px
+}
+
+/* Architecture */
+.diagram{
+ display:flex;
+ align-items:stretch;
+ gap:9px;
+ flex-wrap:wrap
+}
+.node{
+ flex:1;
+ min-width:145px;
+ background:#0e213b;
+ border:1px solid #3c5e81;
+ border-radius:12px;
+ text-align:center;
+ padding:22px 12px
+}
+.node small{
+ color:var(--cyan);
+ font:11px Consolas,monospace
+}
+.node b{display:block;margin:13px 0}
+.arrow{
+ align-self:center;
+ font-size:24px;
+ color:var(--cyan)
+}
+.signal{
+ background:#0a1b32;
+ border:1px solid #325071;
+ border-radius:10px;
+ padding:17px;
+ transition:.25s
+}
+.signal small{
+ font:11px Consolas,monospace;
+ color:var(--cyan)
+}
+.signal b{
+ display:block;
+ font:23px Consolas,monospace;
+ margin:13px 0
+}
+.signal.changed{
+ border-color:var(--cyan);
+ box-shadow:0 0 18px #56dcff23
+}
+.signal.on{
+ border-color:var(--green);
+ background:#113630
+}
+.signal.warning{
+ border-color:var(--red);
+ background:#352137
+}
+.before-after{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:12px;
+ margin-top:15px
+}
+.mini-frame-list{
+ display:flex;
+ gap:7px;
+ flex-wrap:wrap;
+ margin-top:10px
+}
+.mini-frame{
+ background:#142c49;
+ border:1px solid #3c6287;
+ border-radius:7px;
+ min-width:48px;
+ text-align:center;
+ padding:11px;
+ font:16px Consolas,monospace
+}
+.flow-step{
+ padding:15px;
+ margin:9px 0;
+ border-radius:10px;
+ background:#0c223e;
+ border:1px solid #315578
+}
+.flow-step.active{
+ border-color:var(--cyan);
+ background:#163858
+}
+.flow-step small{color:var(--cyan)}
+.flow-step strong{
+ display:block;
+ margin:8px 0;
+ font:16px Consolas,monospace
+}
+
+/* Graph controls */
+.chart svg{width:100%;height:auto}
+.legend{
+ display:flex;
+ gap:20px;
+ margin-top:10px;
+ font-size:12px;
+ color:var(--muted)
+}
+.dot{
+ display:inline-block;
+ width:11px;
+ height:11px;
+ border-radius:3px;
+ margin-right:7px
+}
+.chart-controls{
+ display:flex;
+ flex-wrap:wrap;
+ gap:9px;
+ margin:15px 0
+}
+.chart-summary{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:10px;
+ margin-top:15px
+}
+.chart-summary .signal{padding:14px}
+.chart-summary b{font-size:18px}
+.bar{
+ display:flex;
+ background:var(--red);
+ height:21px;
+ border-radius:6px;
+ overflow:hidden;
+ margin-top:9px
+}
+.barfill{
+ background:var(--cyan);
+ height:100%;
+ transition:width .3s
+}
+
+/* Tables and experiments */
+.tablewrap{max-height:430px;overflow:auto}
+table{
+ width:100%;
+ border-collapse:collapse;
+ min-width:720px;
+ font-size:12px
+}
+th,td{
+ padding:11px;
+ border-bottom:1px solid #294663;
+ text-align:left
+}
+th{
+ position:sticky;
+ top:0;
+ background:#19314e;
+ color:var(--cyan)
+}
+tr:hover{background:#1b3553}
+tr.selected{background:#204866}
+.experiment-card{
+ transition:border-color .2s
+}
+.experiment-card.active{
+ border-color:var(--cyan);
+ box-shadow:0 0 25px #56dcff15
+}
+.experiment-detail{
+ margin-top:18px;
+ border-top:1px solid var(--line);
+ padding-top:16px
+}
+.experiment-detail[hidden]{display:none}
+.experiment-frames{
+ display:flex;
+ flex-wrap:wrap;
+ gap:7px;
+ margin:12px 0
+}
+.experiment-frames span{
+ background:#0b2037;
+ border:1px solid #3d5c7c;
+ border-radius:8px;
+ padding:12px;
+ min-width:47px;
+ text-align:center;
+ font:17px Consolas,monospace
+}
+.experiment-inline-controls{
+ display:flex;
+ align-items:center;
+ gap:7px;
+ flex-wrap:wrap;
+ margin-top:14px
+}
+
+/* Validation animation */
+.test{
+ padding:13px;
+ border-bottom:1px solid var(--line);
+ display:flex;
+ justify-content:space-between;
+ gap:15px;
+ font-size:13px
+}
+.pass{color:var(--green)}
+.fail{color:var(--red)}
+.test-progress-area{
+ margin:24px 0;
+ padding:20px;
+ background:#09192e;
+ border:1px solid #305176;
+ border-radius:12px
+}
+.test-progress-area[hidden]{display:none}
+.test-progress-heading{
+ display:flex;
+ justify-content:space-between;
+ gap:15px;
+ margin-bottom:14px;
+ color:#cfe4fa;
+ font:13px Consolas,monospace
+}
+#testPercent{color:var(--cyan)}
+.test-progress-track{
+ width:100%;
+ height:12px;
+ background:#1b3450;
+ border:1px solid #345574;
+ border-radius:20px;
+ overflow:hidden
+}
+.test-progress-fill{
+ width:0;
+ height:100%;
+ background:linear-gradient(90deg,#287bdb,#56dcff,#52e3b5);
+ transition:width .35s ease;
+ box-shadow:0 0 15px #56dcff66
+}
+.test-terminal{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ margin-top:18px;
+ padding:13px;
+ background:#061323;
+ border:1px solid #294663;
+ border-radius:8px;
+ font:12px Consolas,monospace;
+ color:var(--cyan)
+}
+.terminal-indicator{
+ width:9px;
+ height:9px;
+ background:var(--green);
+ border-radius:50%;
+ box-shadow:0 0 10px var(--green);
+ animation:pulse 1s infinite
+}
+.loading-dots{
+ display:inline-block;
+ overflow:hidden;
+ width:0;
+ animation:dots 1.2s steps(4,end) infinite
+}
+@keyframes pulse{50%{opacity:.3}}
+@keyframes dots{to{width:4ch}}
+.test-result-enter{animation:testAppear .35s ease-out}
+@keyframes testAppear{
+ from{opacity:0;transform:translateY(8px)}
+ to{opacity:1;transform:translateY(0)}
+}
+
+/* Project */
+.workflow{
+ display:flex;
+ gap:9px;
+ align-items:center;
+ flex-wrap:wrap
+}
+.workflow span{
+ background:#102b49;
+ border:1px solid #365c81;
+ border-radius:9px;
+ padding:13px;
+ font-size:12px
+}
+.workflow i{color:var(--cyan);font-style:normal}
+.week{
+ background:#10243d;
+ border:1px solid #345273;
+ border-radius:10px;
+ padding:16px
+}
+.week small{color:var(--cyan)}
+.week b{display:block;margin:10px 0}
+footer{
+ text-align:center;
+ color:var(--muted);
+ font-size:12px;
+ padding:35px 12px
+}
+@media(max-width:950px){
+ .grid2,.grid3{grid-template-columns:1fr}
+ .grid4{grid-template-columns:1fr 1fr}
+ .arrow{display:none}
+}
+@media(max-width:550px){
+ .wrap{padding:12px}
+ .panel{padding:15px}
+ .grid4,.registers,.before-after,
+ .timeline-info,.chart-summary{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<header>
+ <div class="eyebrow">
+  UNIVERSITY OF NORTH TEXAS · CSCE 5610 · FALL 2026 · GROUP 04
+ </div>
+
+ <h1>
+  Comparative Analysis of
+  <span>FIFO and LRU</span>
+  Page Replacement Algorithms in Virtual Memory
+ </h1>
+
+ <p>
+  Interactive Virtual Memory Simulator ·
+  Computer Architecture · Performance Analysis
+ </p>
+
+ <div class="team">
+  <div class="person">
+   <b>Ruchitha Sri Sai Valli Thanmayee Potladurthy</b>
+   <small>11855553 · Integration and Analysis</small>
+  </div>
+  <div class="person">
+   <b>Adla Sanjay Ramaswamy</b>
+   <small>11828288 · LRU Implementation and Analysis</small>
+  </div>
+  <div class="person">
+   <b>Dharani Kondapally</b>
+   <small>11853256 · FIFO Implementation and Validation</small>
+  </div>
+ </div>
+
+ <div class="actions">
+  <a class="btn" target="_blank" rel="noopener"
+     href="https://github.com/Dharanikondapally/Group04_CSCE5610_FA26">
+    ↗ GitHub Repository
+  </a>
+  <a class="btn" target="_blank" rel="noopener"
+     href="https://github.com/users/Dharanikondapally/projects/1">
+    ↗ GitHub Project Board
+  </a>
+ </div>
+</header>
+
+<nav>
+ <a href="#simulator">Live Simulator</a>
+ <a href="#heatmaps">Memory Heatmaps</a>
+ <a href="#architecture">Architecture</a>
+ <a href="#results">Results</a>
+ <a href="#experiments">Experiments</a>
+ <a href="#testing">Validation</a>
+ <a href="#project">Project Design</a>
+</nav>
+
+<section class="panel">
+ <div class="eyebrow">
+  INTERACTIVE MEMORY ARCHITECTURE LABORATORY
+ </div>
+ <h2>Watch every page enter, leave, and move through memory.</h2>
+ <p>
+  Explore how FIFO and LRU respond to identical workloads.
+  Change a page reference or the available physical frames to
+  instantly regenerate the figures, memory traces, execution
+  decisions, charts, and measured results.
+ </p>
+
+ <div class="grid3">
+  <div class="signal">
+   <small>REPLACEMENT POLICIES</small>
+   <b>FIFO × LRU</b>
+   <p class="info">Same page-reference workload</p>
+  </div>
+  <div class="signal">
+   <small>PRIMARY EXPERIMENTS</small>
+   <b>3 · 4 · 5</b>
+   <p class="info">Memory-frame configurations</p>
+  </div>
+  <div class="signal">
+   <small>SIMULATION STATUS</small>
+   <b style="color:var(--green)">LIVE</b>
+   <p class="info">Deterministic results and traces</p>
+  </div>
+ </div>
+</section>
+
+<!-- LIVE SIMULATOR -->
+<section class="section" id="simulator">
+ <div class="eyebrow">01 / SIMULATION CONTROL</div>
+ <h2>Live FIFO vs. LRU Simulator</h2>
+
+ <div class="grid2">
+  <div class="panel">
+   <label for="references">PAGE REFERENCE STRING</label>
+   <textarea id="references">7,0,1,2,0,3,0,4,2,3,0,3,2</textarea>
+   <div class="actions">
+    <button class="btn" onclick="preset('standard')">Standard</button>
+    <button class="btn" onclick="preset('belady')">Belady's Anomaly</button>
+    <button class="btn" onclick="preset('locality')">Locality</button>
+    <button class="btn" onclick="preset('random')">Random</button>
+   </div>
+   <div id="error" class="error" role="alert"></div>
+   <p class="info">
+    Enter 1–250 page IDs separated by commas or spaces.
+    Valid IDs: 0–65535.
+   </p>
+  </div>
+
+  <div class="panel">
+   <label for="frameCount">AVAILABLE PHYSICAL MEMORY FRAMES</label>
+   <div class="numrow">
+    <button class="btn" onclick="adjustFrames(-1)">−</button>
+    <input id="frameCount" type="number" min="1" max="12" value="3">
+    <button class="btn" onclick="adjustFrames(1)">+</button>
+   </div>
+   <input id="frameSlider" type="range" min="1" max="12"
+          value="3" style="margin-top:20px">
+   <p class="info">
+    The proposal evaluates 3, 4, and 5 frames.
+    You can also experiment with 1–12.
+   </p>
+   <div class="actions">
+    <button class="btn primary" onclick="recompute()">
+      ↻ Run Experiment
+    </button>
+    <button class="btn" onclick="preset('standard')">Reset</button>
+   </div>
+  </div>
+ </div>
+
+ <div class="grid4 section">
+  <div class="panel stat">
+   <small>TOTAL PAGE REQUESTS</small>
+   <strong id="mTotal">—</strong>
+   <em>IDENTICAL INPUTS</em>
+  </div>
+  <div class="panel stat">
+   <small>FIFO PAGE FAULTS</small>
+   <strong id="mFIFO" style="color:var(--cyan)">—</strong>
+   <em id="mFRate">—</em>
+  </div>
+  <div class="panel stat">
+   <small>LRU PAGE FAULTS</small>
+   <strong id="mLRU" style="color:var(--purple)">—</strong>
+   <em id="mLRate">—</em>
+  </div>
+  <div class="panel stat">
+   <small>BEST PERFORMER</small>
+   <strong id="mWinner">—</strong>
+   <em id="mDifference">—</em>
+  </div>
+ </div>
+
+ <div class="insight">
+  <div class="eyebrow">LIVE COMPARISON INSIGHT</div>
+  <p id="overallInsight"></p>
+ </div>
+
+ <!-- TIMELINE -->
+ <div class="panel section">
+  <h3>Interactive Page Request Timeline</h3>
+  <p>
+   Every numbered box represents a page requested by the CPU.
+   Click a request to see what happens in FIFO and LRU at that
+   exact moment.
+  </p>
+
+  <div class="timeline" id="timeline"></div>
+
+  <div class="transport">
+   <button class="btn" onclick="setStep(0)">⏮</button>
+   <button class="btn" onclick="setStep(step-1)">◀</button>
+   <button class="btn primary" id="playBtn"
+           onclick="togglePlay()">▶ Play</button>
+   <button class="btn" onclick="setStep(step+1)">▶</button>
+   <button class="btn" onclick="setStep(data.pages.length)">⏭</button>
+   <input id="stepSlider" type="range" min="0"
+          max="13" value="13">
+   <span id="stepLabel">13 / 13</span>
+  </div>
+
+  <div class="timeline-info">
+   <div class="signal">
+    <small>CURRENT REQUEST</small>
+    <b id="timelinePage">—</b>
+    <p class="info">The page currently being accessed</p>
+   </div>
+   <div class="signal">
+    <small>FIFO RESULT</small>
+    <b id="timelineFIFO">—</b>
+    <p class="info" id="timelineFDetails"></p>
+   </div>
+   <div class="signal">
+    <small>LRU RESULT</small>
+    <b id="timelineLRU">—</b>
+    <p class="info" id="timelineLDetails"></p>
+   </div>
+  </div>
+
+  <div class="insight" id="timelineExplanation"></div>
+ </div>
+
+ <!-- MEMORY CONTROLLERS -->
+ <div class="grid2 section">
+  <div class="panel">
+   <h3>FIFO Memory Controller</h3>
+   <div class="eyebrow">
+    FIRST-IN, FIRST-OUT · ARRIVAL QUEUE
+   </div>
+   <p>
+    FIFO replaces the page loaded into memory earliest,
+    regardless of its most recent access.
+   </p>
+   <div class="eyebrow">LIVE PHYSICAL MEMORY FRAMES</div>
+   <div class="frames" id="fifoFrames"></div>
+
+   <div class="registers">
+    <div class="register">
+     <small>REQUESTED PAGE</small><b id="fPage">—</b>
+    </div>
+    <div class="register">
+     <small>REPLACED PAGE</small><b id="fVictim">—</b>
+    </div>
+    <div class="register">
+     <small>ACCESS DECISION</small><b id="fAction">—</b>
+    </div>
+    <div class="register">
+     <small>ARRIVAL ORDER</small><b id="fOrder">—</b>
+    </div>
+    <div class="register">
+     <small>CUMULATIVE HITS</small><b id="fHits">0</b>
+    </div>
+    <div class="register">
+     <small>CUMULATIVE FAULTS</small><b id="fFaults">0</b>
+    </div>
+   </div>
+   <div class="insight" id="fExplain"></div>
+  </div>
+
+  <div class="panel">
+   <h3>LRU Memory Controller</h3>
+   <div class="eyebrow" style="color:var(--purple)">
+    LEAST RECENTLY USED · RECENCY QUEUE
+   </div>
+   <p>
+    LRU replaces the page that has not been referenced
+    for the longest period of time.
+   </p>
+   <div class="eyebrow">LIVE PHYSICAL MEMORY FRAMES</div>
+   <div class="frames" id="lruFrames"></div>
+
+   <div class="registers">
+    <div class="register">
+     <small>REQUESTED PAGE</small><b id="lPage">—</b>
+    </div>
+    <div class="register">
+     <small>REPLACED PAGE</small><b id="lVictim">—</b>
+    </div>
+    <div class="register">
+     <small>ACCESS DECISION</small><b id="lAction">—</b>
+    </div>
+    <div class="register">
+     <small>RECENCY ORDER</small><b id="lOrder">—</b>
+    </div>
+    <div class="register">
+     <small>CUMULATIVE HITS</small><b id="lHits">0</b>
+    </div>
+    <div class="register">
+     <small>CUMULATIVE FAULTS</small><b id="lFaults">0</b>
+    </div>
+   </div>
+   <div class="insight" id="lExplain"></div>
+  </div>
+ </div>
+</section>
+
+<!-- MEMORY HEATMAPS -->
+<section class="section" id="heatmaps">
+ <div class="eyebrow">02 / VISUAL MEMORY ANALYSIS</div>
+ <h2>Animated Memory State Figures</h2>
+ <p>
+  Every heatmap column represents one page request.
+  Every row represents a physical frame.
+  Both figures rebuild when the input or frame count changes.
+ </p>
+
+ <div class="grid2">
+  <div class="panel">
+   <h3>FIFO Frame-State Heatmap</h3>
+   <div id="fifoHeatmap" class="heatmap"></div>
+  </div>
+  <div class="panel">
+   <h3>LRU Frame-State Heatmap</h3>
+   <div id="lruHeatmap" class="heatmap"></div>
+  </div>
+ </div>
+
+ <p class="info">
+  Green = hit · Blue = new page load · Pink = replacement.
+  Click any cell to inspect that step.
+ </p>
+
+ <div class="grid2 section">
+  <div class="panel">
+   <h3>Live Page-Fault Race</h3>
+   <p class="info">
+    Compare how many faults each policy has accumulated
+    at the currently selected step.
+   </p>
+   <div id="faultRace"></div>
+  </div>
+  <div class="panel">
+   <h3>Page Request Frequency</h3>
+   <p class="info">
+    Each bar shows how many times a specific page
+    appears in the reference string.
+   </p>
+   <div id="frequencyChart" class="chart"></div>
+  </div>
+ </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="section" id="architecture">
+ <div class="eyebrow">03 / COMPUTER ARCHITECTURE</div>
+ <h2>Virtual Memory Architecture Explorer</h2>
+
+ <div class="panel">
+  <div class="diagram">
+   <div class="node">
+    <small>STAGE 01</small>
+    <b>CPU PAGE REQUEST</b>
+    <p class="info">Virtual page number</p>
+   </div>
+   <div class="arrow">→</div>
+   <div class="node">
+    <small>STAGE 02</small>
+    <b>RESIDENCY LOOKUP</b>
+    <p class="info">Resident or absent?</p>
+   </div>
+   <div class="arrow">→</div>
+   <div class="node">
+    <small>STAGE 03</small>
+    <b>HIT / FAULT</b>
+    <p class="info">Decision logic</p>
+   </div>
+   <div class="arrow">→</div>
+   <div class="node">
+    <small>STAGE 04</small>
+    <b>FIFO / LRU</b>
+    <p class="info">Replacement policy</p>
+   </div>
+   <div class="arrow">→</div>
+   <div class="node">
+    <small>STAGE 05</small>
+    <b>MEMORY FRAMES</b>
+    <p class="info">Updated pages</p>
+   </div>
+  </div>
+  <p class="info">
+   This is a conceptual memory-management datapath.
+   The simulator models page residency and replacement,
+   not physical CPU registers, transistor-level gates,
+   disk timing or full address translation.
+  </p>
+ </div>
+
+ <div class="panel section">
+  <h3>Live Architecture Register and Signal Monitor</h3>
+
+  <label for="policySelector">
+   SELECT ALGORITHM TO INSPECT
+  </label>
+  <select id="policySelector">
+   <option value="FIFO">FIFO</option>
+   <option value="LRU">LRU</option>
+  </select>
+
+  <div class="grid3" style="margin-top:16px">
+   <div class="signal" id="sigPage">
+    <small>PAGE REQUEST REGISTER</small>
+    <b id="regPage">—</b>
+    <p class="info">Current requested page</p>
+   </div>
+   <div class="signal" id="sigValid">
+    <small>RESIDENT / VALID BIT</small>
+    <b id="regValid">—</b>
+    <p class="info">1 if the requested page was resident</p>
+   </div>
+   <div class="signal" id="sigFault">
+    <small>PAGE FAULT SIGNAL</small>
+    <b id="regFault">—</b>
+    <p class="info">1 when the page was absent</p>
+   </div>
+   <div class="signal" id="sigCapacity">
+    <small>FRAME CAPACITY</small>
+    <b id="regCapacity">—</b>
+    <p class="info">Allocated physical frames</p>
+   </div>
+   <div class="signal" id="sigReplace">
+    <small>REPLACEMENT ENABLE</small>
+    <b id="regReplace">—</b>
+    <p class="info">1 when a resident page is evicted</p>
+   </div>
+   <div class="signal" id="sigIndex">
+    <small>MEMORY FRAME INDEX</small>
+    <b id="regIndex">—</b>
+    <p class="info">Frame read or updated (zero-based)</p>
+   </div>
+  </div>
+
+  <div class="insight">
+   <h3>What changed during this memory access?</h3>
+   <p id="signalExplanation"></p>
+  </div>
+
+  <h3 style="margin-top:25px">Before and After Memory State</h3>
+  <div class="before-after">
+   <div class="signal">
+    <small>BEFORE PAGE REQUEST</small>
+    <div id="beforeFrames" class="mini-frame-list"></div>
+   </div>
+   <div class="signal">
+    <small>AFTER PAGE REQUEST</small>
+    <div id="afterFrames" class="mini-frame-list"></div>
+   </div>
+  </div>
+ </div>
+
+ <div class="grid2 section">
+  <div class="panel">
+   <h3>Virtual Page Residency Table</h3>
+   <p class="info">
+    Inspect the current page-to-frame residency mapping
+    for the selected replacement algorithm.
+   </p>
+   <div id="pageTable" class="tablewrap"></div>
+  </div>
+
+  <div class="panel">
+   <h3>Replacement Decision Flow</h3>
+   <div id="decisionFlow"></div>
+   <div class="insight mono" id="decisionExplanation"></div>
+  </div>
+ </div>
+
+ <div class="grid2 section">
+  <div class="panel">
+   <h3>FIFO Replacement Policy</h3>
+   <p>
+    Maintain pages in insertion order. On a hit,
+    keep arrival order unchanged. When frames are full,
+    evict the oldest resident page.
+   </p>
+   <div class="insight mono">VICTIM = OLDEST LOADED PAGE</div>
+  </div>
+  <div class="panel">
+   <h3>LRU Replacement Policy</h3>
+   <p>
+    Maintain pages in recent-access order.
+    A hit refreshes recency. On a fault with
+    full memory, evict the least recently used page.
+   </p>
+   <div class="insight mono">
+    VICTIM = LEAST RECENTLY ACCESSED PAGE
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- PERFORMANCE -->
+<section class="section" id="results">
+ <div class="eyebrow">04 / QUANTITATIVE MEASUREMENT</div>
+ <h2>Interactive Performance Analysis</h2>
+
+ <div class="panel">
+  <h3>Page Faults vs. Frame Count</h3>
+
+  <p>
+   Select FIFO, LRU or Both to compare replacement
+   performance. Click 3, 4 or 5 frames to highlight
+   that configuration on the graph.
+  </p>
+
+  <div class="chart-controls">
+   <button class="btn active" id="chartBoth"
+           onclick="setChartPolicy('BOTH')">Both</button>
+   <button class="btn" id="chartFIFO"
+           onclick="setChartPolicy('FIFO')">FIFO Only</button>
+   <button class="btn" id="chartLRU"
+           onclick="setChartPolicy('LRU')">LRU Only</button>
+  </div>
+
+  <div class="chart-controls">
+   <button class="btn active" id="highlight3"
+           onclick="setChartFrame(3)">3 Frames</button>
+   <button class="btn" id="highlight4"
+           onclick="setChartFrame(4)">4 Frames</button>
+   <button class="btn" id="highlight5"
+           onclick="setChartFrame(5)">5 Frames</button>
+  </div>
+
+  <div id="faultChart" class="chart"></div>
+
+  <div class="legend">
+   <span>
+    <i class="dot" style="background:var(--cyan)"></i>FIFO
+   </span>
+   <span>
+    <i class="dot" style="background:var(--purple)"></i>LRU
+   </span>
+  </div>
+
+  <div class="chart-summary">
+   <div class="signal">
+    <small>SELECTED FRAMES</small>
+    <b id="chartFrameValue">3</b>
+   </div>
+   <div class="signal">
+    <small>FIFO PAGE FAULTS</small>
+    <b id="chartFIFOValue">—</b>
+   </div>
+   <div class="signal">
+    <small>LRU PAGE FAULTS</small>
+    <b id="chartLRUValue">—</b>
+   </div>
+  </div>
+
+  <div class="insight">
+   <p id="chartExplanation"></p>
+  </div>
+ </div>
+
+ <div class="panel section">
+  <h3>Hits and Faults</h3>
+  <div id="ratioChart"></div>
+  <div class="insight mono">
+   FAULT RATE = PAGE FAULTS / TOTAL REFERENCES
+  </div>
+  <div class="insight mono">
+   HIT RATIO = PAGE HITS / TOTAL REFERENCES
+  </div>
+ </div>
+
+ <div class="panel section">
+  <div class="actions" style="justify-content:space-between">
+   <h3>Complete Execution Audit Trail</h3>
+   <div class="actions">
+    <button class="btn" onclick="exportResults('csv')">
+     ↓ Download CSV
+    </button>
+    <button class="btn" onclick="exportResults('json')">
+     ↓ Download JSON
+    </button>
+   </div>
+  </div>
+
+  <p class="info">
+   Each row shows the same page request under both
+   replacement policies. Click a row to inspect its state.
+  </p>
+
+  <div class="tablewrap">
+   <table>
+    <thead>
+     <tr>
+      <th>STEP</th>
+      <th>PAGE</th>
+      <th>FIFO EVENT</th>
+      <th>FIFO FRAMES</th>
+      <th>LRU EVENT</th>
+      <th>LRU FRAMES</th>
+      <th>FIFO FAULTS</th>
+      <th>LRU FAULTS</th>
+     </tr>
+    </thead>
+    <tbody id="traceBody"></tbody>
+   </table>
+  </div>
+ </div>
+</section>
+
+<!-- EXPERIMENTS -->
+<section class="section" id="experiments">
+ <div class="eyebrow">05 / CONTROLLED EXPERIMENTS</div>
+ <h2>3, 4, and 5 Frame Comparisons</h2>
+
+ <p>
+  The same page-reference string is tested under different
+  memory-frame constraints. Click an experiment to expand
+  its live results right here, without returning to the
+  top of the page.
+ </p>
+
+ <div class="grid3" id="experimentCards"></div>
+
+ <div class="panel section">
+  <h3>Belady's Anomaly Detection</h3>
+  <p id="beladyText"></p>
+  <button class="btn" onclick="preset('belady')">
+   Load Belady Reference String
+  </button>
+ </div>
+</section>
+
+<!-- VALIDATION -->
+<section class="section" id="testing">
+ <div class="eyebrow">06 / CORRECTNESS VERIFICATION</div>
+ <h2>Automated Simulator Tests</h2>
+
+ <div class="panel">
+  <div class="actions" style="justify-content:space-between">
+   <h3>Reproducible Validation</h3>
+   <button class="btn primary" id="runTestsBtn"
+           onclick="runTests()">▶ Run Tests</button>
+  </div>
+
+  <p>
+   Verify expected fault counts, page-hit consistency,
+   memory capacity, FIFO arrival order and LRU
+   recency tracking.
+  </p>
+
+  <div id="testProgressArea" class="test-progress-area" hidden>
+   <div class="test-progress-heading">
+    <span id="testStatus">Initializing verification...</span>
+    <strong id="testPercent">0%</strong>
+   </div>
+   <div class="test-progress-track">
+    <div id="testProgressBar" class="test-progress-fill"></div>
+   </div>
+   <div class="test-terminal">
+    <span class="terminal-indicator"></span>
+    <span id="currentTest">Preparing...</span>
+    <span class="loading-dots" id="loadingDots">...</span>
+   </div>
+  </div>
+
+  <div id="testsOutput"></div>
+ </div>
+</section>
+
+<!-- PROJECT -->
+<section class="section" id="project">
+ <div class="eyebrow">07 / PROJECT DESIGN</div>
+ <h2>Research Objective and Development Plan</h2>
+
+ <div class="grid2">
+  <div class="panel">
+   <h3>Objective</h3>
+   <p>
+    Develop a virtual memory simulator that implements
+    and compares First-In, First-Out and Least Recently Used
+    page replacement algorithms under identical workloads
+    and physical-memory constraints.
+   </p>
+
+   <h3>Research Question</h3>
+   <p>
+    How do FIFO and LRU differ in page-fault and
+    page-hit performance across different reference
+    strings and memory-frame configurations?
+   </p>
+  </div>
+
+  <div class="panel">
+   <h3>Experimental Method</h3>
+   <p>
+    Process fixed and user-defined reference strings
+    with 3, 4 and 5 frames. Track memory states,
+    page hits, faults, hit ratios, fault rates and
+    replacement decisions.
+   </p>
+
+   <h3>Implementation Note</h3>
+   <p>
+    This standalone webpage uses JavaScript for the
+    interactive simulation. The submitted proposal
+    specifies Python 3 as the planned core implementation.
+    A Python implementation should also be included in
+    the final repository to follow that plan.
+   </p>
+  </div>
+ </div>
+
+ <div class="panel section">
+  <h3>System Workflow</h3>
+  <div class="workflow">
+   <span>Reference String + Frame Count</span><i>→</i>
+   <span>Experiment Controller</span><i>→</i>
+   <span>FIFO / LRU Engines</span><i>→</i>
+   <span>Trace + Metrics</span><i>→</i>
+   <span>Comparison and Visualization</span>
+  </div>
+ </div>
+
+ <div class="panel section">
+  <h3>Six-Week Project Plan</h3>
+  <div class="grid3">
+   <div class="week">
+    <small>WEEK 01</small><b>Planning and Design</b>
+    <p>Define workflow, workloads, metrics and test cases.</p>
+    <small>All Members</small>
+   </div>
+   <div class="week">
+    <small>WEEK 02</small><b>Core Implementation</b>
+    <p>FIFO and LRU algorithms and frame-state tracking.</p>
+    <small>Dharani / Sanjay</small>
+   </div>
+   <div class="week">
+    <small>WEEK 03</small><b>Integration</b>
+    <p>Experiment controller, traces and validation.</p>
+    <small>Ruchitha / All</small>
+   </div>
+   <div class="week">
+    <small>WEEK 04</small><b>Testing</b>
+    <p>Run workloads and verify manually traceable cases.</p>
+    <small>All Members</small>
+   </div>
+   <div class="week">
+    <small>WEEK 05</small><b>Analysis</b>
+    <p>Compare results and prepare visualizations.</p>
+    <small>Ruchitha / Sanjay / Dharani</small>
+   </div>
+   <div class="week">
+    <small>WEEK 06</small><b>Finalization</b>
+    <p>Final testing, documentation and presentation.</p>
+    <small>All Members</small>
+   </div>
+  </div>
+ </div>
+
+ <div class="grid2 section">
+  <div class="panel">
+   <h3>Risk: Incorrect Replacement Logic</h3>
+   <p>
+    Verify FIFO arrival order, LRU recency updates,
+    memory allocation and metric calculations using
+    manual traces and automated tests.
+   </p>
+  </div>
+  <div class="panel">
+   <h3>Risk: Integration and Visualization</h3>
+   <p>
+    Keep algorithm calculations separate from visual
+    rendering so correctness remains testable.
+   </p>
+  </div>
+ </div>
+</section>
+
+<footer>
+ <strong>
+  Comparative Analysis of FIFO and LRU
+  Page Replacement Algorithms in Virtual Memory
+ </strong>
+ <p>
+  University of North Texas · CSCE 5610 · Fall 2026 · Group 04
+ </p>
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ============================================
+   INITIAL CONFIGURATION
+============================================ */
+
+const $ = id => document.getElementById(id);
+
+const presets = {
+ standard:[7,0,1,2,0,3,0,4,2,3,0,3,2],
+ belady:[1,2,3,4,1,2,5,1,2,3,4,5],
+ locality:[1,2,1,3,1,2,4,1,2,3,1,2,4,1,2]
+};
+
+let data = null;
+let step = 0;
+let playback = null;
+let debounce = null;
+
+let chartPolicy = "BOTH";
+let chartFrame = 3;
+let testRunning = false;
+let expandedExperiment = null;
+const experimentSteps = {3:1,4:1,5:1};
+
+/* ============================================
+   INPUT VALIDATION
+============================================ */
+
+function parsePages(){
+ const tokens = $("references").value
+  .trim().split(/[\s,]+/).filter(Boolean);
+
+ if(tokens.length<1 || tokens.length>250){
+  throw Error("Enter between 1 and 250 page references.");
+ }
+
+ return tokens.map(t=>{
+  if(!/^\d+$/.test(t)){
+   throw Error("Use nonnegative integers separated by spaces or commas.");
+  }
+  const n=Number(t);
+
+  if(!Number.isSafeInteger(n) || n>65535){
+   throw Error("Page IDs must be between 0 and 65535.");
+  }
+  return n;
+ });
+}
+
+function capacity(){
+ const n=Number($("frameCount").value);
+
+ if(!Number.isInteger(n) || n<1 || n>12){
+  throw Error("Frame count must be between 1 and 12.");
+ }
+ return n;
+}
+
+function pct(x){
+ return (x*100).toFixed(1)+"%";
+}
+
+/* ============================================
+   FIFO / LRU SIMULATION ENGINE
+============================================ */
+
+function simulate(pages,count,policy){
+ let frames=Array(count).fill(null);
+ let order=[];
+ let hits=0;
+ let faults=0;
+
+ const history=[];
+
+ pages.forEach((page,i)=>{
+  const before=[...frames];
+
+  let index=frames.indexOf(page);
+  const hit=index!==-1;
+
+  let victim=null;
+  let action="";
+  let explain="";
+
+  if(hit){
+   hits++;
+   action="HIT";
+
+   if(policy==="LRU"){
+    order=order.filter(x=>x!==page);
+    order.push(page);
+
+    explain=`Page ${page} was already resident in frame ${index}.
+LRU records a hit and moves the page to the most-recently-used
+position. No replacement occurs.`;
+   }else{
+    explain=`Page ${page} was already resident in frame ${index}.
+FIFO records a hit and preserves the existing arrival order.
+No replacement occurs.`;
+   }
+
+  }else{
+   faults++;
+
+   index=frames.indexOf(null);
+
+   if(index!==-1){
+    frames[index]=page;
+    order.push(page);
+    action="LOAD";
+
+    explain=`Page ${page} was absent, so a page fault occurred.
+Frame ${index} was empty, allowing the page to be loaded without
+evicting another resident page.`;
+
+   }else{
+    victim=order.shift();
+    index=frames.indexOf(victim);
+    frames[index]=page;
+    order.push(page);
+    action="REPLACE";
+
+    explain=policy==="FIFO"
+     ?`Page ${page} was absent and memory was full.
+FIFO selected page ${victim} because it entered memory
+earliest. Page ${page} replaces it in frame ${index}.`
+     :`Page ${page} was absent and memory was full.
+LRU selected page ${victim} because it had not been
+accessed for the longest time. Page ${page} replaces
+it in frame ${index}.`;
+   }
+  }
+
+  history.push({
+   step:i+1,
+   page,
+   index,
+   hit,
+   victim,
+   action,
+   explain,
+   before,
+   frames:[...frames],
+   order:[...order],
+   hits,
+   faults
+  });
+ });
+
+ return {
+  policy,
+  capacity:count,
+  pages:[...pages],
+  history,
+  hits,
+  faults,
+  hitRatio:hits/pages.length,
+  faultRate:faults/pages.length
+ };
+}
+
+/* ============================================
+   MAIN EXPERIMENT CONTROLLER
+============================================ */
+
+function stopPlay(){
+ if(playback!==null)clearInterval(playback);
+ playback=null;
+ $("playBtn").textContent="▶ Play";
+}
+
+function recompute(){
+ stopPlay();
+
+ try{
+  const pages=parsePages();
+  const count=capacity();
+
+  data={
+   pages,
+   capacity:count,
+   fifo:simulate(pages,count,"FIFO"),
+   lru:simulate(pages,count,"LRU")
+  };
+
+  $("error").textContent="";
+  $("frameSlider").value=count;
+  $("stepSlider").max=pages.length;
+
+  updateSummary();
+  buildTimeline();
+  buildTrace();
+  drawHeatmaps();
+  drawCharts();
+  drawExperiments();
+  drawFrequency();
+
+  setStep(1);
+
+ }catch(error){
+  $("error").textContent=error.message;
+ }
+}
+
+function adjustFrames(n){
+ const current=Number($("frameCount").value)||3;
+
+ $("frameCount").value=
+  Math.max(1,Math.min(12,current+n));
+
+ recompute();
+}
+
+function preset(name){
+ const pages=name==="random"
+  ?Array.from({length:24},()=>Math.floor(Math.random()*10))
+  :presets[name];
+
+ $("references").value=pages.join(", ");
+ $("frameCount").value=3;
+
+ recompute();
+}
+
+/* ============================================
+   SUMMARY
+============================================ */
+
+function updateSummary(){
+ const {pages,fifo,lru}=data;
+
+ $("mTotal").textContent=pages.length;
+ $("mFIFO").textContent=fifo.faults;
+ $("mLRU").textContent=lru.faults;
+
+ $("mFRate").textContent=
+  pct(fifo.faultRate)+" FAULT RATE";
+
+ $("mLRate").textContent=
+  pct(lru.faultRate)+" FAULT RATE";
+
+ const winner=fifo.faults===lru.faults
+  ?"TIE"
+  :fifo.faults<lru.faults?"FIFO":"LRU";
+
+ const diff=Math.abs(fifo.faults-lru.faults);
+
+ $("mWinner").textContent=winner;
+ $("mDifference").textContent=
+  diff+" FAULT(S) DIFFERENCE";
+
+ $("overallInsight").textContent=
+  `For ${pages.length} page references and ${data.capacity} frames,
+FIFO records ${fifo.faults} faults and ${fifo.hits} hits.
+LRU records ${lru.faults} faults and ${lru.hits} hits. `+
+  (winner==="TIE"
+   ?"Both perform equally on this workload."
+   :`${winner} performs better by ${diff} page fault(s).`)+
+  " Changing the reference string or frame count can change the result.";
+}
+
+/* ============================================
+   PAGE REQUEST TIMELINE
+============================================ */
+
+function buildTimeline(){
+ const host=$("timeline");
+ host.replaceChildren();
+
+ data.pages.forEach((p,i)=>{
+  const b=document.createElement("button");
+  b.className="token";
+
+  const sm=document.createElement("small");
+  sm.textContent=i+1;
+
+  const strong=document.createElement("b");
+  strong.textContent=p;
+
+  const event=document.createElement("span");
+  const f=data.fifo.history[i];
+  const l=data.lru.history[i];
+
+  event.className="event";
+
+  if(f.hit && l.hit){
+   event.textContent="HIT";
+   event.classList.add("hit-label");
+  }else if(!f.hit && !l.hit){
+   event.textContent="FAULT";
+   event.classList.add("fault-label");
+  }else{
+   event.textContent="MIXED";
+  }
+
+  b.append(sm,strong,event);
+  b.onclick=()=>{
+   stopPlay();
+   setStep(i+1);
+  };
+
+  host.appendChild(b);
+ });
+}
+
+function frameView(id,res,rec){
+ const host=$(id);
+ host.replaceChildren();
+
+ const frames=rec
+  ?rec.frames
+  :Array(res.capacity).fill(null);
+
+ frames.forEach((p,i)=>{
+  const box=document.createElement("div");
+  box.className="frame";
+
+  if(rec && rec.index===i){
+   box.classList.add(
+    rec.hit?"hit":
+    rec.action==="REPLACE"?"replace":"load"
+   );
+   box.classList.add("changed");
+  }
+
+  const small=document.createElement("small");
+  small.textContent="FRAME "+i;
+
+  const strong=document.createElement("strong");
+  strong.textContent=p===null?"—":p;
+
+  box.append(small,strong);
+  host.appendChild(box);
+ });
+}
+
+function updatePolicy(prefix,res,rec){
+ frameView(
+  prefix==="f"?"fifoFrames":"lruFrames",
+  res,rec
+ );
+
+ $(prefix+"Page").textContent=
+  rec?rec.page:"READY";
+
+ $(prefix+"Victim").textContent=
+  rec && rec.victim!==null?rec.victim:"NONE";
+
+ $(prefix+"Action").textContent=
+  rec?rec.action:"IDLE";
+
+ $(prefix+"Order").textContent=
+  rec?rec.order.join(" → "):"EMPTY";
+
+ $(prefix+"Hits").textContent=rec?rec.hits:0;
+ $(prefix+"Faults").textContent=rec?rec.faults:0;
+
+ $(prefix+"Explain").textContent=
+  rec?rec.explain:"No page processed.";
+}
+
+function setStep(n){
+ if(!data)return;
+
+ step=Math.min(
+  data.pages.length,
+  Math.max(0,n)
+ );
+
+ const f=step?data.fifo.history[step-1]:null;
+ const l=step?data.lru.history[step-1]:null;
+
+ updatePolicy("f",data.fifo,f);
+ updatePolicy("l",data.lru,l);
+
+ $("stepSlider").value=step;
+ $("stepLabel").textContent=
+  step+" / "+data.pages.length;
+
+ document.querySelectorAll(".token").forEach((b,i)=>{
+  b.classList.toggle("selected",i+1===step);
+  b.classList.toggle("past",i+1<step);
+ });
+
+ document.querySelectorAll("#traceBody tr").forEach((tr,i)=>{
+  tr.classList.toggle("selected",i+1===step);
+ });
+
+ document.querySelectorAll(".heatcell[data-step]").forEach(cell=>{
+  cell.classList.toggle(
+   "selected",
+   Number(cell.dataset.step)===step
+  );
+ });
+
+ updateTimelineExplanation(f,l);
+ updateArchitecture();
+ updateFaultRace();
+}
+
+function updateTimelineExplanation(f,l){
+ if(!f || !l){
+  $("timelinePage").textContent="READY";
+  $("timelineFIFO").textContent="IDLE";
+  $("timelineLRU").textContent="IDLE";
+  $("timelineFDetails").textContent="";
+  $("timelineLDetails").textContent="";
+  $("timelineExplanation").textContent=
+   "Select a page request or press Play to begin.";
+  return;
+ }
+
+ $("timelinePage").textContent=f.page;
+ $("timelineFIFO").textContent=f.action;
+ $("timelineLRU").textContent=l.action;
+
+ $("timelineFDetails").textContent=
+  f.hit?"Page found in memory":
+  f.action==="LOAD"?"Loaded into empty frame":
+  `Replaced page ${f.victim}`;
+
+ $("timelineLDetails").textContent=
+  l.hit?"Page found in memory":
+  l.action==="LOAD"?"Loaded into empty frame":
+  `Replaced page ${l.victim}`;
+
+ let explanation=
+  `At request ${step}, the CPU accesses page ${f.page}. `;
+
+ if(f.action===l.action){
+  explanation+=
+   `Both algorithms report ${f.action}. `;
+ }else{
+  explanation+=
+   `FIFO reports ${f.action}, while LRU reports ${l.action}. `;
+ }
+
+ explanation+=
+  `FIFO has accumulated ${f.faults} fault(s), `+
+  `and LRU has accumulated ${l.faults} fault(s). `;
+
+ if(f.victim!==null || l.victim!==null){
+  explanation+=
+   `The policies may choose different victims because `+
+   `FIFO uses arrival order whereas LRU uses last access.`;
+ }
+
+ $("timelineExplanation").textContent=explanation;
+}
+
+function togglePlay(){
+ if(playback!==null){
+  stopPlay();
+  return;
+ }
+
+ if(!data)return;
+
+ if(step===data.pages.length){
+  setStep(0);
+ }
+
+ $("playBtn").textContent="Ⅱ Pause";
+
+ playback=setInterval(()=>{
+  if(step>=data.pages.length){
+   stopPlay();
+   return;
+  }
+  setStep(step+1);
+ },650);
+}
+
+/* ============================================
+   MEMORY HEATMAPS
+============================================ */
+
+function drawHeatmaps(){
+ function render(id,result){
+  const host=$(id);
+  host.replaceChildren();
+
+  const header=document.createElement("div");
+  header.className="heatrow";
+
+  const lab=document.createElement("span");
+  lab.className="heatlabel";
+  lab.textContent="PAGE";
+  header.appendChild(lab);
+
+  result.history.forEach((rec,i)=>{
+   const cell=document.createElement("button");
+   cell.className="heatcell";
+   cell.textContent=rec.page;
+   cell.title=`Request ${i+1}: page ${rec.page}`;
+
+   cell.onclick=()=>{
+    stopPlay();
+    setStep(i+1);
+   };
+
+   header.appendChild(cell);
+  });
+
+  host.appendChild(header);
+
+  for(let f=0;f<result.capacity;f++){
+   const row=document.createElement("div");
+   row.className="heatrow";
+
+   const label=document.createElement("span");
+   label.className="heatlabel";
+   label.textContent="FRAME "+f;
+   row.appendChild(label);
+
+   result.history.forEach((rec,i)=>{
+    const cell=document.createElement("button");
+    cell.className="heatcell";
+    cell.dataset.step=i+1;
+
+    const page=rec.frames[f];
+    cell.textContent=page===null?"—":page;
+
+    if(rec.index===f){
+     cell.classList.add(
+      rec.hit?"hit":
+      rec.action==="REPLACE"?"replaced":"changed"
+     );
+    }
+
+    cell.title=
+     `Step ${i+1}, frame ${f}: `+
+     `${page===null?"empty":page}; ${rec.action}`;
+
+    cell.onclick=()=>{
+     stopPlay();
+     setStep(i+1);
+    };
+
+    row.appendChild(cell);
+   });
+
+   host.appendChild(row);
+  }
+ }
+
+ render("fifoHeatmap",data.fifo);
+ render("lruHeatmap",data.lru);
+}
+
+/* ============================================
+   PAGE-FAULT RACE
+============================================ */
+
+function updateFaultRace(){
+ if(!data)return;
+
+ const f=step?data.fifo.history[step-1].faults:0;
+ const l=step?data.lru.history[step-1].faults:0;
+
+ const max=Math.max(1,f,l);
+
+ $("faultRace").innerHTML=[
+  ["FIFO",f,"var(--cyan)"],
+  ["LRU",l,"var(--purple)"]
+ ].map(([name,value,color])=>`
+ <div style="margin:20px 0">
+  <div class="actions" style="justify-content:space-between">
+   <b>${name}</b>
+   <span class="mono">${value} fault(s)</span>
+  </div>
+  <div style="
+   height:23px;background:#091629;
+   border:1px solid #355171;
+   border-radius:7px;overflow:hidden;
+   margin-top:9px">
+   <div style="
+    height:100%;
+    width:${100*value/max}%;
+    background:${color};
+    transition:width .3s">
+   </div>
+  </div>
+ </div>
+ `).join("")+
+ `<p class="info">
+   Cumulative counts after ${step} of
+   ${data.pages.length} page requests.
+ </p>`;
+}
+
+/* ============================================
+   PAGE REQUEST FREQUENCY
+============================================ */
+
+function drawFrequency(){
+ const counts=new Map();
+
+ data.pages.forEach(p=>{
+  counts.set(p,(counts.get(p)||0)+1);
+ });
+
+ const entries=[...counts.entries()]
+  .sort((a,b)=>a[0]-b[0]);
+
+ const W=Math.max(480,entries.length*45+65);
+ const H=250,L=42,B=35,T=18;
+
+ const ymax=Math.max(...entries.map(x=>x[1]));
+ const plotW=W-L-12;
+ const band=plotW/entries.length;
+
+ let svg=`<svg viewBox="0 0 ${W} ${H}"
+ role="img" aria-label="Page frequency chart">`;
+
+ entries.forEach(([page,count],i)=>{
+  const h=count/ymax*(H-T-B);
+  const x=L+i*band+band*.17;
+  const y=H-B-h;
+
+  svg+=`
+   <rect x="${x}" y="${y}"
+    width="${band*.66}" height="${h}"
+    rx="4" fill="#56dcff">
+    <title>Page ${page}: ${count} requests</title>
+   </rect>
+   <text x="${x+band*.33}" y="${Math.max(12,y-5)}"
+    fill="#dcefff" font-size="11"
+    text-anchor="middle">${count}</text>
+   <text x="${x+band*.33}" y="${H-13}"
+    fill="#9ab1cb" font-size="11"
+    text-anchor="middle">${page}</text>`;
+ });
+
+ $("frequencyChart").innerHTML=svg+"</svg>";
+}
+
+/* ============================================
+   ARCHITECTURE SIGNALS
+============================================ */
+
+function updateArchitecture(){
+ if(!data)return;
+
+ const policy=$("policySelector").value;
+
+ const result=policy==="FIFO"
+  ?data.fifo:data.lru;
+
+ const rec=step?result.history[step-1]:null;
+
+ $("regPage").textContent=rec?rec.page:"READY";
+ $("regValid").textContent=rec?(rec.hit?1:0):"—";
+ $("regFault").textContent=rec?(rec.hit?0:1):"—";
+ $("regCapacity").textContent=data.capacity;
+ $("regReplace").textContent=
+  rec?(rec.action==="REPLACE"?1:0):"—";
+ $("regIndex").textContent=rec?rec.index:"—";
+
+ [
+  "sigPage","sigValid","sigFault",
+  "sigCapacity","sigReplace","sigIndex"
+ ].forEach(id=>{
+  $(id).classList.remove("on","warning","changed");
+ });
+
+ if(rec){
+  $("sigPage").classList.add("changed");
+
+  if(rec.hit){
+   $("sigValid").classList.add("on");
+  }else{
+   $("sigFault").classList.add("warning");
+  }
+
+  if(rec.action==="REPLACE"){
+   $("sigReplace").classList.add("warning");
+  }
+
+  $("sigIndex").classList.add("changed");
+ }
+
+ $("signalExplanation").textContent=rec
+  ?`${policy}: ${rec.explain}`
+  :"Select a page request to inspect the control signals.";
+
+ renderBeforeAfter(rec);
+ renderPageTable(rec);
+ renderDecisionFlow(rec);
+}
+
+function renderBeforeAfter(rec){
+ function draw(id,frames){
+  const host=$(id);
+  host.replaceChildren();
+
+  frames.forEach((page,i)=>{
+   const span=document.createElement("span");
+   span.className="mini-frame";
+   span.title="Frame "+i;
+   span.textContent=page===null?"—":page;
+   host.appendChild(span);
+  });
+ }
+
+ const empty=Array(data.capacity).fill(null);
+
+ draw("beforeFrames",rec?rec.before:empty);
+ draw("afterFrames",rec?rec.frames:empty);
+}
+
+function renderPageTable(rec){
+ const resident=rec?rec.frames:[];
+ const pageIds=[...new Set(data.pages)]
+  .sort((a,b)=>a-b);
+
+ const host=$("pageTable");
+ host.replaceChildren();
+
+ const table=document.createElement("table");
+ const thead=document.createElement("thead");
+ const row=document.createElement("tr");
+
+ ["PAGE","RESIDENT","FRAME"].forEach(value=>{
+  const th=document.createElement("th");
+  th.textContent=value;
+  row.appendChild(th);
+ });
+
+ thead.appendChild(row);
+ table.appendChild(thead);
+
+ const tbody=document.createElement("tbody");
+
+ pageIds.forEach(page=>{
+  const frame=resident.indexOf(page);
+  const tr=document.createElement("tr");
+
+  [
+   page,
+   frame!==-1?"VALID":"ABSENT",
+   frame===-1?"—":frame
+  ].forEach(value=>{
+   const td=document.createElement("td");
+   td.textContent=value;
+   tr.appendChild(td);
+  });
+
+  tbody.appendChild(tr);
+ });
+
+ table.appendChild(tbody);
+ host.appendChild(table);
+}
+
+function renderDecisionFlow(rec){
+ const host=$("decisionFlow");
+ host.replaceChildren();
+
+ const stages=[
+  ["1. PAGE REQUEST",rec?`PAGE ${rec.page}`:"WAITING"],
+  ["2. RESIDENCY LOOKUP",rec?(rec.hit?"HIT":"MISS"):"—"],
+  ["3. POLICY DECISION",rec?rec.action:"—"],
+  ["4. FRAME OPERATION",rec?`FRAME ${rec.index}`:"—"]
+ ];
+
+ stages.forEach(([title,value],i)=>{
+  const div=document.createElement("div");
+  div.className="flow-step";
+  if(rec)div.classList.add("active");
+
+  const small=document.createElement("small");
+  small.textContent=title;
+
+  const strong=document.createElement("strong");
+  strong.textContent=value;
+
+  div.append(small,strong);
+  host.appendChild(div);
+ });
+
+ $("decisionExplanation").textContent=
+  rec?rec.explain:"Select a request to inspect.";
+}
+
+/* ============================================
+   INTERACTIVE PERFORMANCE CHART
+============================================ */
+
+function setChartPolicy(policy){
+ chartPolicy=policy;
+ drawCharts();
+}
+
+function setChartFrame(n){
+ chartFrame=n;
+ drawCharts();
+}
+
+function drawCharts(){
+ if(!data)return;
+
+ ["BOTH","FIFO","LRU"].forEach(policy=>{
+  const id=
+   policy==="BOTH"?"chartBoth":
+   policy==="FIFO"?"chartFIFO":"chartLRU";
+
+  $(id).classList.toggle("active",chartPolicy===policy);
+ });
+
+ [3,4,5].forEach(n=>{
+  $("highlight"+n).classList.toggle(
+   "active",chartFrame===n
+  );
+ });
+
+ const counts=Array.from({length:12},(_,i)=>i+1);
+
+ const f=counts.map(n=>
+  simulate(data.pages,n,"FIFO").faults
+ );
+
+ const l=counts.map(n=>
+  simulate(data.pages,n,"LRU").faults
+ );
+
+ const W=600,H=270,L=40,R=15,T=20,B=35;
+ const max=Math.max(1,...f,...l);
+
+ const x=i=>L+i*(W-L-R)/11;
+ const y=n=>T+(max-n)*(H-T-B)/max;
+
+ let svg=`<svg viewBox="0 0 ${W} ${H}"
+ role="img" aria-label="Interactive page fault comparison chart">`;
+
+ for(let i=0;i<=4;i++){
+  const v=max*i/4;
+  const yy=y(v);
+
+  svg+=`
+   <line x1="${L}" y1="${yy}"
+    x2="${W-R}" y2="${yy}"
+    stroke="#304a69" stroke-dasharray="4 4"/>
+   <text x="4" y="${yy+4}"
+    fill="#98b0cc" font-size="11">
+    ${v.toFixed(1)}
+   </text>`;
+ }
+
+ counts.forEach((n,i)=>{
+  svg+=`
+   <text x="${x(i)}" y="${H-11}"
+    fill="#9ab1cb" font-size="11"
+    text-anchor="middle">${n}</text>`;
+ });
+
+ const selectedX=x(chartFrame-1);
+
+ svg+=`
+  <rect x="${selectedX-10}" y="${T}"
+   width="20" height="${H-T-B}"
+   fill="#56dcff" opacity=".08"/>
+  <line x1="${selectedX}" y1="${T}"
+   x2="${selectedX}" y2="${H-B}"
+   stroke="#ffffff" stroke-dasharray="5 4"
+   opacity=".7"/>`;
+
+ function path(values,color,name){
+  const points=values
+   .map((v,i)=>x(i)+","+y(v)).join(" ");
+
+  let output=`
+   <polyline points="${points}"
+    fill="none" stroke="${color}"
+    stroke-width="3"/>`;
+
+  values.forEach((value,i)=>{
+   const radius=i+1===chartFrame?7:4;
+
+   output+=`
+    <circle cx="${x(i)}" cy="${y(value)}"
+     r="${radius}" fill="${color}">
+     <title>${name}, ${i+1} frames:
+      ${value} faults</title>
+    </circle>`;
+  });
+
+  return output;
+ }
+
+ if(chartPolicy==="BOTH"||chartPolicy==="FIFO"){
+  svg+=path(f,"#56dcff","FIFO");
+ }
+
+ if(chartPolicy==="BOTH"||chartPolicy==="LRU"){
+  svg+=path(l,"#b59aff","LRU");
+ }
+
+ svg+="</svg>";
+ $("faultChart").innerHTML=svg;
+
+ const selectedFIFO=simulate(
+  data.pages,chartFrame,"FIFO"
+ );
+
+ const selectedLRU=simulate(
+  data.pages,chartFrame,"LRU"
+ );
+
+ $("chartFrameValue").textContent=chartFrame;
+ $("chartFIFOValue").textContent=selectedFIFO.faults;
+ $("chartLRUValue").textContent=selectedLRU.faults;
+
+ const winner=
+  selectedFIFO.faults===selectedLRU.faults
+  ?"Both algorithms tie"
+  :selectedFIFO.faults<selectedLRU.faults
+  ?"FIFO has fewer faults"
+  :"LRU has fewer faults";
+
+ $("chartExplanation").textContent=
+  `With ${chartFrame} frames, FIFO produces
+${selectedFIFO.faults} page faults and has a hit ratio of
+${pct(selectedFIFO.hitRatio)}. LRU produces
+${selectedLRU.faults} page faults and has a hit ratio of
+${pct(selectedLRU.hitRatio)}. ${winner} for this workload.`;
+
+ $("ratioChart").innerHTML=[
+  ["FIFO",data.fifo,"#56dcff"],
+  ["LRU",data.lru,"#b59aff"]
+ ].map(([name,r,color])=>`
+  <div style="margin:24px 0">
+   <div class="actions"
+    style="justify-content:space-between">
+    <b>${name}</b>
+    <small>${r.hits} hits · ${r.faults} faults</small>
+   </div>
+   <div class="bar">
+    <div class="barfill"
+     style="width:${r.hitRatio*100}%;
+     background:${color}">
+    </div>
+   </div>
+   <p class="info">
+    Hit ${pct(r.hitRatio)} ·
+    Fault ${pct(r.faultRate)}
+   </p>
+  </div>
+ `).join("");
+}
+
+/* ============================================
+   COMPLETE EXECUTION TRACE
+============================================ */
+
+function buildTrace(){
+ const host=$("traceBody");
+ host.replaceChildren();
+
+ data.pages.forEach((page,i)=>{
+  const f=data.fifo.history[i];
+  const l=data.lru.history[i];
+
+  const values=[
+   i+1,
+   page,
+   f.action,
+   f.frames.map(v=>v===null?"—":v).join(" | "),
+   l.action,
+   l.frames.map(v=>v===null?"—":v).join(" | "),
+   f.faults,
+   l.faults
+  ];
+
+  const tr=document.createElement("tr");
+
+  values.forEach(value=>{
+   const td=document.createElement("td");
+   td.textContent=value;
+   tr.appendChild(td);
+  });
+
+  tr.onclick=()=>{
+   stopPlay();
+   setStep(i+1);
+  };
+
+  host.appendChild(tr);
+ });
+}
+
+/* ============================================
+   INLINE EXPERIMENT CARDS
+============================================ */
+
+function drawExperiments(){
+ const host=$("experimentCards");
+ host.replaceChildren();
+
+ [3,4,5].forEach(n=>{
+  const f=simulate(data.pages,n,"FIFO");
+  const l=simulate(data.pages,n,"LRU");
+
+  const winner=f.faults===l.faults
+   ?"TIE"
+   :f.faults<l.faults?"FIFO":"LRU";
+
+  const card=document.createElement("div");
+  card.className="panel experiment-card";
+  card.id="experimentCard"+n;
+
+  card.innerHTML=`
+   <div class="eyebrow">${n} MEMORY FRAMES</div>
+   <h3 style="margin-top:15px">Controlled Experiment</h3>
+
+   <p>FIFO Faults:
+    <b style="color:var(--cyan)">${f.faults}</b>
+   </p>
+   <p>LRU Faults:
+    <b style="color:var(--purple)">${l.faults}</b>
+   </p>
+
+   <p>FIFO Hit Ratio: ${pct(f.hitRatio)}</p>
+   <p>LRU Hit Ratio: ${pct(l.hitRatio)}</p>
+
+   <div class="insight">
+    Best Performer: <b>${winner}</b>
+   </div>
+
+   <button class="btn primary"
+    style="margin-top:14px"
+    onclick="toggleExperiment(${n})">
+    ▶ Explore ${n}-Frame Experiment
+   </button>
+
+   <div class="experiment-detail"
+    id="experimentDetail${n}" hidden>
+   </div>
+  `;
+
+  host.appendChild(card);
+ });
+
+ if(expandedExperiment!==null){
+  renderExperiment(expandedExperiment);
+ }
+
+ const faults=Array.from(
+  {length:12},
+  (_,i)=>simulate(data.pages,i+1,"FIFO").faults
+ );
+
+ const anomalies=[];
+
+ for(let i=1;i<12;i++){
+  if(faults[i]>faults[i-1]){
+   anomalies.push(
+    `${i}→${i+1} frames
+(${faults[i-1]}→${faults[i]} faults)`
+   );
+  }
+ }
+
+ $("beladyText").textContent=anomalies.length
+  ?"FIFO exhibits Belady's anomaly for this workload: "+
+   anomalies.join("; ")+"."
+  :"No FIFO Belady anomaly was found with 1–12 frames "+
+   "for the current workload. Try the provided example.";
+}
+
+function toggleExperiment(n){
+ if(expandedExperiment===n){
+  expandedExperiment=null;
+
+  $("experimentDetail"+n).hidden=true;
+  $("experimentCard"+n).classList.remove("active");
+  return;
+ }
+
+ expandedExperiment=n;
+
+ [3,4,5].forEach(k=>{
+  $("experimentDetail"+k).hidden=k!==n;
+  $("experimentCard"+k).classList.toggle(
+   "active",k===n
+  );
+ });
+
+ renderExperiment(n);
+}
+
+function renderExperiment(n){
+ const detail=$("experimentDetail"+n);
+ if(!detail)return;
+
+ const f=simulate(data.pages,n,"FIFO");
+ const l=simulate(data.pages,n,"LRU");
+
+ const current=Math.min(
+  data.pages.length,
+  Math.max(1,experimentSteps[n])
+ );
+
+ experimentSteps[n]=current;
+
+ const fr=f.history[current-1];
+ const lr=l.history[current-1];
+
+ const frameHTML=record=>
+  record.frames.map((page,i)=>
+   `<span title="Frame ${i}">${page===null?"—":page}</span>`
+  ).join("");
+
+ detail.innerHTML=`
+  <div class="eyebrow">
+   LIVE EXPERIMENT · STEP ${current}/${data.pages.length}
+  </div>
+
+  <div class="experiment-inline-controls">
+   <button class="btn"
+    onclick="experimentStep(${n},-1)">◀ Previous</button>
+   <button class="btn"
+    onclick="experimentStep(${n},1)">Next ▶</button>
+  </div>
+
+  <p class="info">
+   Current Requested Page: <b>${fr.page}</b>
+  </p>
+
+  <h4 style="color:var(--cyan)">FIFO FRAME STATE</h4>
+  <div class="experiment-frames">
+   ${frameHTML(fr)}
+  </div>
+  <p class="info">
+   Decision: <b>${fr.action}</b> ·
+   Faults: ${fr.faults} ·
+   Hits: ${fr.hits}
+  </p>
+
+  <h4 style="color:var(--purple)">LRU FRAME STATE</h4>
+  <div class="experiment-frames">
+   ${frameHTML(lr)}
+  </div>
+  <p class="info">
+   Decision: <b>${lr.action}</b> ·
+   Faults: ${lr.faults} ·
+   Hits: ${lr.hits}
+  </p>
+
+  <div class="insight">
+   <div class="eyebrow">WHAT HAPPENED?</div>
+   <p class="info">${fr.explain}</p>
+   <p class="info">${lr.explain}</p>
+  </div>
+ `;
+}
+
+function experimentStep(n,delta){
+ experimentSteps[n]=Math.max(
+  1,
+  Math.min(data.pages.length,experimentSteps[n]+delta)
+ );
+
+ renderExperiment(n);
+}
+
+/* ============================================
+   ALGORITHM VALIDATION
+============================================ */
+
+function validate(r){
+ return r.history.every((s,i)=>{
+  const resident=s.frames.filter(x=>x!==null);
+
+  return (
+   s.hits+s.faults===i+1 &&
+   resident.length<=r.capacity &&
+   new Set(resident).size===resident.length &&
+   s.order.length===resident.length &&
+   resident.every(p=>s.order.includes(p))
+  );
+ });
+}
+
+async function runTests(){
+ if(testRunning)return;
+
+ testRunning=true;
+
+ const button=$("runTestsBtn");
+ const area=$("testProgressArea");
+ const bar=$("testProgressBar");
+ const percent=$("testPercent");
+ const status=$("testStatus");
+ const current=$("currentTest");
+ const dots=$("loadingDots");
+ const output=$("testsOutput");
+
+ const tests=[
+  ["Standard trace, 3 frames",
+   presets.standard,3,10,9],
+
+  ["Belady trace, 3 frames",
+   presets.belady,3,9,10],
+
+  ["Belady trace, 4 frames",
+   presets.belady,4,10,8],
+
+  ["Repeated page",
+   [5,5,5,5],3,1,1],
+
+  ["Single frame",
+   [1,2,1],1,3,3]
+ ];
+
+ button.disabled=true;
+ button.textContent="◉ Running Tests";
+
+ area.hidden=false;
+ output.replaceChildren();
+
+ bar.style.width="0%";
+ percent.textContent="0%";
+ status.textContent="Starting validation...";
+ dots.style.display="inline-block";
+
+ let passed=0;
+
+ const delay=ms=>
+  new Promise(resolve=>setTimeout(resolve,ms));
+
+ try{
+  for(let i=0;i<tests.length;i++){
+   const [
+    name,pages,n,expectedF,expectedL
+   ]=tests[i];
+
+   status.textContent=
+    `Executing Test ${i+1} of ${tests.length}`;
+
+   current.textContent="Checking: "+name;
+
+   await delay(550);
+
+   const fifo=simulate(pages,n,"FIFO");
+   const lru=simulate(pages,n,"LRU");
+
+   const success=
+    fifo.faults===expectedF &&
+    lru.faults===expectedL &&
+    validate(fifo) &&
+    validate(lru);
+
+   if(success)passed++;
+
+   const row=document.createElement("div");
+   row.className="test test-result-enter";
+
+   const description=document.createElement("span");
+   description.textContent=
+    `${name} — Expected FIFO/LRU: `+
+    `${expectedF}/${expectedL}; `+
+    `Actual: ${fifo.faults}/${lru.faults}`;
+
+   const result=document.createElement("b");
+   result.className=success?"pass":"fail";
+   result.textContent=success?"✓ PASS":"✕ FAIL";
+
+   row.append(description,result);
+   output.appendChild(row);
+
+   const progress=Math.round(
+    (i+1)/tests.length*100
+   );
+
+   bar.style.width=progress+"%";
+   percent.textContent=progress+"%";
+
+   await delay(180);
+  }
+
+  status.textContent="Validation completed";
+  current.textContent=
+   `${passed} of ${tests.length} tests passed`;
+
+  dots.style.display="none";
+
+  const summary=document.createElement("h3");
+  summary.className=
+   passed===tests.length?"pass":"fail";
+
+  summary.textContent=
+   `${passed} / ${tests.length} tests passed`;
+
+  output.prepend(summary);
+
+  button.textContent="↻ Run Tests Again";
+
+ }catch(error){
+  status.textContent="Validation interrupted";
+  current.textContent=error.message;
+  dots.style.display="none";
+  button.textContent="↻ Retry Tests";
+
+ }finally{
+  button.disabled=false;
+  testRunning=false;
+ }
+}
+
+/* ============================================
+   EXPORT RESULTS
+============================================ */
+
+function exportResults(type){
+ if(!data)return;
+
+ const rows=data.pages.map((page,i)=>{
+  const f=data.fifo.history[i];
+  const l=data.lru.history[i];
+
+  return {
+   step:i+1,
+   page,
+   fifo_action:f.action,
+   fifo_frames:f.frames.join("|"),
+   fifo_hits:f.hits,
+   fifo_faults:f.faults,
+   lru_action:l.action,
+   lru_frames:l.frames.join("|"),
+   lru_hits:l.hits,
+   lru_faults:l.faults
+  };
+ });
+
+ let content,mime,name;
+
+ if(type==="json"){
+  content=JSON.stringify({
+   capacity:data.capacity,
+   pages:data.pages,
+   summary:{
+    FIFO:{
+     hits:data.fifo.hits,
+     faults:data.fifo.faults
+    },
+    LRU:{
+     hits:data.lru.hits,
+     faults:data.lru.faults
+    }
+   },
+   trace:rows
+  },null,2);
+
+  mime="application/json";
+  name="FIFO_LRU_Results.json";
+
+ }else{
+  const headers=Object.keys(rows[0]);
+
+  const escapeCSV=v=>
+   '"'+String(v??"").replace(/"/g,'""')+'"';
+
+  content=[
+   headers.join(","),
+   ...rows.map(r=>
+    headers.map(h=>escapeCSV(r[h])).join(",")
+   )
+  ].join("\r\n");
+
+  mime="text/csv";
+  name="FIFO_LRU_Results.csv";
+ }
+
+ const url=URL.createObjectURL(
+  new Blob([content],{type:mime})
+ );
+
+ const a=document.createElement("a");
+ a.href=url;
+ a.download=name;
+
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+/* ============================================
+   EVENT HANDLERS
+============================================ */
+
+$("references").addEventListener("input",()=>{
+ clearTimeout(debounce);
+ debounce=setTimeout(recompute,180);
+});
+
+$("frameCount").addEventListener("input",recompute);
+
+$("frameSlider").addEventListener("input",e=>{
+ $("frameCount").value=e.target.value;
+ recompute();
+});
+
+$("stepSlider").addEventListener("input",e=>{
+ stopPlay();
+ setStep(Number(e.target.value));
+});
+
+$("policySelector").addEventListener(
+ "change",updateArchitecture
+);
+
+/* INITIALIZE */
+recompute();
+
+</script>
+</body>
+</html>
