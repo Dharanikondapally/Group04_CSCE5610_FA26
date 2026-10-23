@@ -1,0 +1,114 @@
+{
+  "project": "Comparative Analysis of FIFO and LRU Page Replacement Algorithms in Virtual Memory",
+  "course": "CSCE 5610 - Computer Architecture",
+  "group": "Group 4",
+  "totalTests": 5,
+  "passed": 5,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Standard Reference String",
+      "pages": [
+        7,
+        0,
+        1,
+        2,
+        0,
+        3,
+        0,
+        4,
+        2,
+        3,
+        0,
+        3,
+        2
+      ],
+      "frames": 3,
+      "expectedFIFO": 10,
+      "actualFIFO": 10,
+      "expectedLRU": 9,
+      "actualLRU": 9,
+      "status": "PASS",
+      "error": null
+    },
+    {
+      "name": "Belady Anomaly - 3 Frames",
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        1,
+        2,
+        5,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "frames": 3,
+      "expectedFIFO": 9,
+      "actualFIFO": 9,
+      "expectedLRU": 10,
+      "actualLRU": 10,
+      "status": "PASS",
+      "error": null
+    },
+    {
+      "name": "Belady Anomaly - 4 Frames",
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        1,
+        2,
+        5,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "frames": 4,
+      "expectedFIFO": 10,
+      "actualFIFO": 10,
+      "expectedLRU": 8,
+      "actualLRU": 8,
+      "status": "PASS",
+      "error": null
+    },
+    {
+      "name": "Repeated Page Accesses",
+      "pages": [
+        5,
+        5,
+        5,
+        5
+      ],
+      "frames": 3,
+      "expectedFIFO": 1,
+      "actualFIFO": 1,
+      "expectedLRU": 1,
+      "actualLRU": 1,
+      "status": "PASS",
+      "error": null
+    },
+    {
+      "name": "Single Memory Frame",
+      "pages": [
+        1,
+        2,
+        1
+      ],
+      "frames": 1,
+      "expectedFIFO": 3,
+      "actualFIFO": 3,
+      "expectedLRU": 3,
+      "actualLRU": 3,
+      "status": "PASS",
+      "error": null
+    }
+  ]
+}
